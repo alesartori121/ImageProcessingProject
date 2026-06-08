@@ -1,0 +1,21 @@
+# File di salvataggio automatico di MATLAB
+*.asv
+*.m~
+
+# File di cache e compilazione di Simulink
+slprj/
+*.slxc
+*.rtw
+
+# File di configurazione locale del workspace
+.matlab/
+
+# File di log e report
+*.log
+*.html
+
+# File di output di grandi dimensioni (opzionale)
+*.mat
+*.avi
+*.mp4
+*.fig
