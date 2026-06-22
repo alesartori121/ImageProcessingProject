@@ -1,62 +1,51 @@
-function img_bcet = apply_bcet(img_input)
-% APPLY_BCET - Balance Contrast Enhancement Technique
-%   img_bcet = apply_bcet(img_input)
-%
-%   Applies the Balance Contrast Enhancement Technique (BCET) to an image.
-%   This algorithm improves the image contrast by using a parabolic 
-%   transformation while maintaining the fundamental shape of the histogram.
-%
-%   Reference: Zotin et al., "Edge detection in MRI brain tumor images..."
+function output_image = apply_bcet(input_image, mask)
+% APPLY_BCET Applies the Balance Contrast Enhancement Technique.
+%   output_image = apply_bcet(input_image, mask) computes the parabolic
+%   transformation to stretch the contrast of the input image, calculating
+%   the statistical parameters only on the region defined by 'mask'.
 
-    % 1. Extract input image statistics (L, H, E)
-    % We use (:) to consider the 2D matrix as a single 1D vector
-    L = min(img_input(:)); % Minimum intensity
-    H = max(img_input(:)); % Maximum intensity
-    E = mean(img_input(:)); % Mean intensity
+% Extract valid pixels to compute statistics safely
+valid_pixels = input_image(mask);
 
-    % 2. Define adaptive target statistics
-    % Instead of forcing absolute values that cause saturation,
-    % we adapt the targets to the original dynamics of the image.
-    l = 0.0; % Target minimum (dark background)
-    h = min(1.0, H * 1.2); % Target maximum: slightly expand, but max 1.0
-    
-    % The target mean (e) is delicate. Forcing it to 0.5 on a very dark
-    % image causes white saturation. We slightly increase the original mean.
-    e = E * 1.2; % Increase mean by 20%
-    
-    % Safety check: target mean must be strictly between l and h
-    if e >= h
-        e = h - 0.1;
-    elseif e <= l
-        e = l + 0.1;
-    end
+% Input statistics (from valid region only)
+l = min(valid_pixels(:));           % Minimum input value
+h = max(valid_pixels(:));           % Maximum input value
+e = mean(valid_pixels(:));          % Mean input value
+s = mean(valid_pixels(:).^2);       % Mean square input value
 
-    % 3. Calculate parabolic coefficients (a, b, c) based on BCET math
-    numerator_b   = H^2 * (e - l) - E^2 * (h - l) + L^2 * (h - e);
-    denominator_b = 2 * (H * (e - l) - E * (h - l) + L * (h - e));
-    
-    % Check to avoid division by zero
-    if denominator_b == 0
-        b = 0; 
-    else
-        b = numerator_b / denominator_b;
-    end
-    
-    % Equations for 'a' and 'c'
-    denom_a = (H - b)^2 - (L - b)^2;
-    if denom_a == 0
-        a = 1; % If image is uniform, no transformation
-    else
-        a = (h - l) / denom_a;
-    end
-    
-    c = l - a * (L - b)^2;
+% Desired output statistics (normalized space [0, 1])
+L = 0.0;  % Desired minimum
+H = 1.0;  % Desired maximum
+E = 0.5;  % Desired mean (balanced mid-gray)
 
-    % 4. Apply the parabolic transformation to the entire image
-    img_bcet = a .* (img_input - b).^2 + c;
+% Compute the parabolic coefficients: y = a(x - b)^2 + c
+% Denominator for parameter 'b'
+denom = 2 * (h * (E - L) - e * (H - L) + l * (H - E));
 
-    % 5. Ensure limits are respected (Clipping to avoid out-of-bounds)
-    img_bcet(img_bcet < 0) = 0;
-    img_bcet(img_bcet > 1) = 1;
+% Prevent division by zero in homogeneous images
+if denom == 0
+    output_image = input_image;
+    warning('BCET denominator is zero. Returning original image.');
+    return;
+end
+
+% Numerator for parameter 'b'
+num = (h^2) * (E - L) - s * (H - L) + (l^2) * (H - E);
+
+% Calculate coefficients
+b = num / denom;
+a = (H - L) / ((h - b)^2 - (l - b)^2);
+c = L - a * (l - b)^2;
+
+% Initialize output image
+output_image = zeros(size(input_image));
+
+% Apply transformation only to the masked pixels
+% Formula: y = a * (x - b)^2 + c
+output_image(mask) = a * (input_image(mask) - b).^2 + c;
+
+% Clamp values to ensure they stay strictly within [0, 1] range
+output_image(output_image < 0) = 0;
+output_image(output_image > 1) = 1;
 
 end
