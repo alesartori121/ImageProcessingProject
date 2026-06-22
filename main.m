@@ -51,6 +51,14 @@ end
 % Conversion to double precision to preserve the fidelity of clinical data [0.0, 1.0]
 img_double = im2double(img_gray);
 
+%% --- 1.5. BRAIN MASKING (Pre-processing Enhancement) ---
+% Isolate the brain by calling an external function
+brain_mask = create_brain_mask(img_double);
+
+% Apply the mask: keep brain tissue, force background strictly to 0
+img_double_masked = img_double .* brain_mask;
+disp('Brain masking applied successfully to remove background interference.');
+
 %% --- 2. SPATIAL FILTERING (Image Enhancement) ---
 
 % From the Paper (Zotin et al.): Application of the Median Filter
@@ -61,27 +69,30 @@ kernel_size = [3 3]; % Typical size to balance smoothing and edge preservation
 img_filtered = medfilt2(img_double, kernel_size);
 disp('Median Filter [3x3] applied successfully.');
 
-
-%% --- PRELIMINARY RESULTS VISUALIZATION ---
-figure('Name', 'Phase 1: Pre-processing and Filtering', 'NumberTitle', 'off', 'Position', [100, 100, 1200, 400]);
-
 % --- Application of BCET (Balance Contrast Enhancement Technique) ---
 % Enhances the contrast for better segmentation in the next phase
 img_bcet = apply_bcet(img_filtered);
 disp('BCET enhancement applied successfully.');
 
-subplot(1, 4, 1);
-imshow(img_orig);
-title('Original');
+%% --- 3. EDGE MAP GENERATION (Phase 2) ---
 
-subplot(1, 4, 2);
-imshow(img_double);
-title('Grayscale');
+% --- Step 1: Fuzzy C-Means (FCM) Segmentation ---
+% We segment the image into 'k' clusters based on pixel intensities.
+% Typically, for a brain MRI with a tumor, we look for:
+% Background, Cerebrospinal Fluid, Brain Tissue, and Tumor.
+num_clusters = 4;
+[img_segmented, centers] = fcm_segmentation(img_bcet, num_clusters);
+disp(['FCM Segmentation completed with ', num2str(num_clusters), ' clusters.']);
 
-subplot(1, 4, 3);
-imshow(img_filtered);
-title('Median Filter');
+% The 'img_segmented' output contains values ​​from 1 to num_clusters.
+% To display it correctly, we scale it to the colormap.
+img_segmented_disp = mat2gray(img_segmented);
 
-subplot(1, 4, 4);
-imshow(img_bcet);
-title('Enhanced (BCET)');
+% --- Step 2: Tumor Extraction and Edge Detection (Canny) ---
+% Call external function to extract tumor mask and apply Canny
+tumor_edges = extract_tumor_edges(img_segmented, img_bcet, brain_mask, num_clusters);
+disp('Canny edge detection applied successfully to the cleaned tumor mask.');
+
+%% --- PRELIMINARY RESULTS VISUALIZATION ---
+% Visualizzazione dei risultati
+visualize_pipeline_results(img_orig, img_double_masked, img_filtered, img_bcet, img_segmented_disp, num_clusters, tumor_edges);
