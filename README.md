@@ -1,5 +1,5 @@
 # ImageProcessingProject
-🎯 Study Objective
+Study Objective
 The purpose of this paper is to develop an automated strategy to accurately detect and extract the edges of brain tumors from patient magnetic resonance images (MRI). Accurate edge extraction is crucial in the medical field, as it defines the size of a potential surgical intervention and helps assess the condition of adjacent tissues.
 
 ## Acknowledgements and Citations
