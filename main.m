@@ -9,7 +9,7 @@ clc; clear; close all;
 
 %% --- 0. PATH CONFIGURATION ---
 % Define the absolute or relative paths of the dataset.
-% Modify these strings with the actual path on your computer.
+% Modify these strings with the actual path.
 base_dir = 'BRATS2012'; % Main folder
 img_dir = fullfile(base_dir, 'Images', 'BRATS_001'); % Example: first subfolder
 lbl_dir = fullfile(base_dir, 'Labels', 'BRATS_001');
@@ -65,14 +65,23 @@ disp('Median Filter [3x3] applied successfully.');
 %% --- PRELIMINARY RESULTS VISUALIZATION ---
 figure('Name', 'Phase 1: Pre-processing and Filtering', 'NumberTitle', 'off', 'Position', [100, 100, 1200, 400]);
 
-subplot(1, 3, 1);
+% --- Application of BCET (Balance Contrast Enhancement Technique) ---
+% Enhances the contrast for better segmentation in the next phase
+img_bcet = apply_bcet(img_filtered);
+disp('BCET enhancement applied successfully.');
+
+subplot(1, 4, 1);
 imshow(img_orig);
 title('Original');
 
-subplot(1, 3, 2);
+subplot(1, 4, 2);
 imshow(img_double);
-title('Grayscale (Double Precision)');
+title('Grayscale');
 
-subplot(1, 3, 3);
+subplot(1, 4, 3);
 imshow(img_filtered);
-title('Filtered (Median Filter [3x3])');
+title('Median Filter');
+
+subplot(1, 4, 4);
+imshow(img_bcet);
+title('Enhanced (BCET)');
