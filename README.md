@@ -1,25 +1,31 @@
-# ImageProcessingProject
-Study Objective
-The purpose of this paper is to develop an automated strategy to accurately detect and extract the edges of brain tumors from patient magnetic resonance images (MRI). Accurate edge extraction is crucial in the medical field, as it defines the size of a potential surgical intervention and helps assess the condition of adjacent tissues.
+**Brain Tumor Edge Detection: Baseline Reproduction and Optimization Strategy**
 
-## Acknowledgements and Citations
+**Overview**
+This repository contains the MATLAB implementation, statistical validation, and algorithmic optimization of the MRI brain tumor edge detection pipeline originally proposed by Zotin et al. The project was developed as an academic study to evaluate the robustness of unsupervised clustering methods on large-scale clinical data and to propose concrete architectural improvements to overcome intrinsic topological limitations.
 
-This repository utilizes the **BRATS 2012** (Brain Tumor Segmentation Challenge) dataset. I would like to acknowledge the challenge organizers and the original authors for making this valuable medical imaging data publicly available. 
+**Dataset**
+The pipeline is validated against the Brain Tumor dataset (Task01: Brain) from the Medical Segmentation Decathlon (MSD) challenge. The dataset comprises 484 multiparametric MRI volumes, including T1, T1Gd, T2, and FLAIR modalities, alongside multi-class expert-annotated ground truth masks.
 
-If you use the data or code from this repository, please make sure to cite the original BRATS benchmark publication:
+**Repository Structure and Methodology**
 
-> **Menze, B. H., et al.** (2015). *The Multimodal Brain Tumor Image Segmentation Benchmark (BRATS)*. IEEE Transactions on Medical Imaging, 34(10), 1993-2024. DOI: [10.1109/TMI.2014.2377694](https://doi.org/10.1109/TMI.2014.2377694)
+The repository is divided into two main environments to facilitate a direct A/B ablation study:
 
-**BibTeX:**
-```bibtex
-@article{menze2015brats,
-  title={The Multimodal Brain Tumor Image Segmentation Benchmark (BRATS)},
-  author={Menze, Bjoern H and Jakab, Andras and Bauer, Stefan and Kalpathy-Cramer, Jayashree and Farahani, Keyvan and Kirby, Justin and Burren, Yuliya and Porz, Nicole and Slotboom, Johannes and Wiest, Roland and others},
-  journal={IEEE Transactions on Medical Imaging},
-  volume={34},
-  number={10},
-  pages={1993--2024},
-  year={2015},
-  publisher={IEEE},
-  doi={10.1109/TMI.2014.2377694}
-}
+**1. Baseline Implementation (src/)**
+A strict reproduction of the original methodology. It processes T2-weighted MRI slices and relies solely on intensity-based mathematics and topological heuristics.
+
+* **Pre-processing:** Median filtering and robust Otsu-based brain masking.
+* **Enhancement:** Balance Contrast Enhancement Technique (BCET) applied strictly within the brain mask to normalize the histogram and isolate hyperintense regions.
+* **Segmentation:** Unsupervised Fuzzy C-Means (FCM) clustering ($C=4$) followed by a maximum connected component heuristic to isolate the tumor mass.
+* **Edge Extraction & Evaluation:** Canny edge detection validated against the ground truth using rigorous spatial metrics, most notably Pratt's Figure of Merit (FOM).
+
+**2. Optimized Pipeline (opt_src/)**
+Developed after batch-processing the baseline and identifying critical failure points caused by the Partial Volume Effect and Cerebrospinal Fluid (CSF) interference. This environment introduces three major innovations:
+
+* **Dynamic Slice Selection:** An automated 3D volume analysis that dynamically extracts the optimal Z-axis slice containing the maximum tumor area, discarding the static central-slice approach.
+* **Multimodal Transition (FLAIR):** A radiometric switch from T2 to FLAIR sequence. By leveraging the physical suppression of free water (CSF) inherent to FLAIR imaging, the ambiguity of the FCM clustering is eliminated without the need for fragile topological filters.
+* **Dilated Ground Truth Evaluation:** The introduction of a spatial tolerance band (1-pixel radius) in the evaluation metrics to bridge the mathematical rigidity of the Canny operator and the physiological variance of human expert tracing, significantly improving the clinical reliability of the Sensitivity metric.
+
+**References**
+
+* **Methodology:** Zotin, A., et al. (2018). Edge detection in MRI brain tumor images based on fuzzy C-means clustering. *Procedia Computer Science*, 136, 41-50.
+* **Dataset:** Antonelli, M., et al. (2022). The Medical Segmentation Decathlon. *Nature Communications*, 13(1), 4128.
