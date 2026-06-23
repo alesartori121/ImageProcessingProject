@@ -20,4 +20,5 @@ slprj/
 *.mp4
 *.fig
 
-BRATS2012/
+# Dati
+data/
