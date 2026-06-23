@@ -1,98 +1,78 @@
 % -------------------------------------------------------------------------
 % PROJECT: Brain Tumor Edge Detection (Zotin et al. Reproduction)
 % SCRIPT: main.m
-% DATABASE: Task01_BrainTumour (MSD Structure)
-% DESCRIPTION: Pipeline for T2 processing, Masking, BCET and GT loading.
+% DESCRIPTION: Single-patient computation pipeline with visualization.
 % -------------------------------------------------------------------------
-
 clear; clc; close all;
 
-% --- STEP 1: Dynamic Path Configuration ---
-% Determine the directory where this script resides (src folder)
+% --- 1. DYNAMIC PATH CONFIGURATION ---
+disp('--- CONFIGURING PATHS ---');
 script_dir = fileparts(mfilename('fullpath'));
-
-% Navigate one level up to the project root, then into the data folder
 data_dir = fullfile(script_dir, '..', 'data'); 
 patient_id = 'BRATS_001.nii.gz';
-
 image_path = fullfile(data_dir, 'imagesTr', patient_id);
 label_path = fullfile(data_dir, 'labelsTr', patient_id);
 
-% Verify file existence before loading to ensure pipeline robustness
 if ~exist(image_path, 'file')
-    error('Image file not found. Check if the dataset is extracted inside the correct "data" folder.');
+    error('CRITICAL ERROR: Image file not found.');
 end
 
-% =========================================================================
-% STEP 2: DATA LOADING AND SLICE EXTRACTION
-% =========================================================================
-
+% --- 2. DATA LOADING AND SLICE EXTRACTION ---
 disp('--- LOADING NIFTI VOLUMES ---');
+volume4D = niftiread(niftiinfo(image_path));
+volume_gt = niftiread(niftiinfo(label_path));
 
-% Read image metadata and volume (4D tensor: [X, Y, Z, Modality])
-info_img = niftiinfo(image_path);
-volume4D = niftiread(info_img);
-
-% Read ground truth metadata and volume (3D tensor: [X, Y, Z])
-info_lbl = niftiinfo(label_path);
-volume_gt = niftiread(info_lbl);
-
-% Extract the T2 modality channel (Index 4 for MSD Task01)
+% Extract T2 Modality (Channel 4) and central slice
 volume_t2 = double(volume4D(:, :, :, 4));
-
-% Calculate the central axial slice index along the Z-axis
-z_slices = size(volume_t2, 3);
-mid_slice = round(z_slices / 2);
-
-% Extract the 2D slices for both the image and the ground truth
+mid_slice = round(size(volume_t2, 3) / 2);
 slice_t2 = volume_t2(:, :, mid_slice);
 slice_gt = double(volume_gt(:, :, mid_slice));
 
-% Min-Max Normalization of the T2 slice to [0, 1] range
+% Normalization [0, 1] and Ground Truth Binarization
 slice_norm = (slice_t2 - min(slice_t2(:))) / (max(slice_t2(:)) - min(slice_t2(:)));
+binary_gt = slice_gt > 0;
 
-disp(['Successfully extracted slice: ', num2str(mid_slice), ' out of ', num2str(z_slices)]);
+% --- 3. PRE-PROCESSING & ENHANCEMENT (STRICT ZOTIN PIPELINE) ---
+disp('--- APPLYING ENHANCEMENT ---');
+% Median filter to remove equipment noise
+filtered_slice = medfilt2(slice_norm, [3 3]);
 
-% =========================================================================
-% STEP 3: BRAIN MASKING AND BCET ENHANCEMENT
-% =========================================================================
+% Robust brain masking (Otsu thresholding + Morphology)
+level = graythresh(filtered_slice);
+initial_mask = imbinarize(filtered_slice, level);
+clean_mask = bwareafilt(imfill(initial_mask, 'holes'), 1);
 
-disp('--- APPLYING PRE-PROCESSING ---');
+% Apply Balance Contrast Enhancement Technique
+enhanced_slice = apply_bcet(filtered_slice, clean_mask);
 
-% 1. Brain Mask Generation (Otsu Method)
-level = graythresh(slice_norm);
-initial_mask = imbinarize(slice_norm, level);
+% --- 4. FUZZY C-MEANS (FCM) CLUSTERING & ISOLATION ---
+disp('--- EXECUTING FCM CLUSTERING ---');
+num_clusters = 4;
+[segmented_slice, candidate_tumor_mask] = apply_fcm_clustering(enhanced_slice, clean_mask, num_clusters);
 
-% 2. Morphological cleaning of the mask
-se = strel('disk', 5);
-clean_mask = imopen(initial_mask, se);
-clean_mask = imclose(clean_mask, se);
+% Isolate the largest connected mass (removes smaller CSF artifacts)
+final_tumor_mask = isolate_tumor_mass(candidate_tumor_mask);
 
-% 3. Application of the Balance Contrast Enhancement Technique (BCET)
-enhanced_slice = apply_bcet(slice_norm, clean_mask);
+% --- 5. CANNY EDGE DETECTION ---
+disp('--- EXTRACTING TUMOR EDGES ---');
+[tumor_edges, clinical_overlay] = extract_tumor_edges(final_tumor_mask, slice_norm);
 
-disp('Pre-processing completed successfully.');
+% --- 6. QUANTITATIVE METRICS ---
+disp('--- CALCULATING METRICS ---');
+[Pcd, Pnd, Pfa, FOM, Sens, Acc] = calculate_zotin_metrics(tumor_edges, binary_gt);
+disp('--------------------------------------------------');
+disp('   SINGLE SLICE EVALUATION RESULTS (BRATS_001)    ');
+disp('--------------------------------------------------');
+disp(['Pcd (Prob. of Correct Detection): ', num2str(Pcd, '%.4f')]);
+disp(['Pnd (Prob. of Non-Detection):     ', num2str(Pnd, '%.4f')]);
+disp(['Pfa (Prob. of False Alarm):       ', num2str(Pfa, '%.6f')]);
+disp(['Sensitivity:                      ', num2str(Sens, '%.4f')]);
+disp(['Accuracy:                         ', num2str(Acc, '%.4f')]);
+disp(['FOM (Pratt''s Figure of Merit):    ', num2str(FOM, '%.4f')]);
+disp('--------------------------------------------------');
 
-% --- Visualizzazione Intermedia ---
-figure('Name', 'Pre-processing Results');
-subplot(1, 3, 1);
-imshow(slice_norm, []);
-title('Original T2 Slice');
-
-subplot(1, 3, 2);
-imshow(clean_mask);
-title('Morphological Brain Mask');
-
-subplot(1, 3, 3);
-imshow(enhanced_slice, []);
-title('BCET Enhanced Output');
-
-% --- Preliminary Visualization ---
-% Min-Max Normalization of the T2 slice to [0, 1] range
-slice_norm = (slice_t2 - min(slice_t2(:))) / (max(slice_t2(:)) - min(slice_t2(:)));
-
-disp(['Successfully extracted slice: ', num2str(mid_slice), ' out of ', num2str(z_slices)]);
-
-% --- Preliminary Visualization ---
-% Call the custom function to display the extracted slices
-display_preliminary_visualization(slice_norm, slice_gt);
+% --- 7. VISUALIZATION RENDERING ---
+disp('Computation complete. Rendering visualizations...');
+display_preliminary_visualization(slice_norm, slice_gt, filtered_slice, ...
+    clean_mask, enhanced_slice, num_clusters, segmented_slice, ...
+    candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt);
