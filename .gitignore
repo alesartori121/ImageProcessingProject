@@ -22,3 +22,5 @@ slprj/
 
 # Dati
 data/
+
+.DS_Store
