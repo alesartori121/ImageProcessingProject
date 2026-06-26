@@ -29,9 +29,9 @@ end
 disp(['Found ', num2str(num_patients), ' patients. Beginning processing...']);
 
 % --- 2. PREALLOCATE DATA STORAGE ---
-results_table = table('Size', [num_patients, 8], ...
-    'VariableTypes', {'string', 'double', 'double', 'double', 'double', 'double', 'double', 'double'}, ...
-    'VariableNames', {'PatientID', 'DynamicSliceZ', 'Pcd_Sens', 'Pnd', 'Pfa', 'Accuracy', 'FOM', 'ProcessingTime'});
+results_table = table('Size', [num_patients, 9], ...
+    'VariableTypes', {'string', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'}, ...
+    'VariableNames', {'PatientID', 'DynamicSliceZ', 'Pcd_Sens', 'Pnd', 'Pfa', 'Accuracy', 'FOM', 'ProcessingTime', 'NumClusters'});
 
 h_wait = waitbar(0, 'Processing Optimized Dataset...');
 
@@ -49,15 +49,20 @@ for i = 1:num_patients
         % -- Load Data --
         volume4D = niftiread(niftiinfo(img_path));
         volume_gt = double(niftiread(niftiinfo(lbl_path)));
-        
-        % -- INNOVATION 1: Dynamic Slice Selection --
-        tumor_pixels_per_slice = squeeze(sum(sum(volume_gt > 0, 1), 2));
-        [~, best_slice_idx] = max(tumor_pixels_per_slice);
-        results_table.DynamicSliceZ(i) = best_slice_idx;
-        
+
+        % -- INNOVATION 1: Dynamic Slice Selection (UNSUPERVISED) --
+        % NOTE ON FIDELITY: does NOT use volume_gt (label leakage); see
+        % opt_main.m for the full rationale. Scores slices by FLAIR
+        % hyperintense area relative to a whole-volume threshold.
         % -- INNOVATION 2: FLAIR Modality (Channel 1) --
         volume_flair = double(volume4D(:, :, :, 1));
-        
+
+        brain_voxels = volume_flair(volume_flair > 0);
+        hyper_threshold = quantile(brain_voxels, 0.95);
+        hyperintense_area_per_slice = squeeze(sum(sum(volume_flair > hyper_threshold, 1), 2));
+        [~, best_slice_idx] = max(hyperintense_area_per_slice);
+        results_table.DynamicSliceZ(i) = best_slice_idx;
+
         slice_flair = volume_flair(:, :, best_slice_idx);
         slice_gt = volume_gt(:, :, best_slice_idx);
         
@@ -73,7 +78,9 @@ for i = 1:num_patients
         enhanced_slice = apply_bcet(filtered_slice, clean_mask);
         
         % -- FCM Clustering --
-        [~, candidate_tumor_mask] = apply_fcm_clustering(enhanced_slice, clean_mask, 4);
+        % c is chosen automatically from this range (Zotin et al. does not
+        % specify c); see apply_fcm_clustering.m for the selection criteria.
+        [~, candidate_tumor_mask, chosen_c] = apply_fcm_clustering(enhanced_slice, clean_mask, 3:5);
         final_tumor_mask = isolate_tumor_mass(candidate_tumor_mask);
         
         % -- Edge Detection --
@@ -88,10 +95,12 @@ for i = 1:num_patients
         results_table.Pfa(i) = Pfa;
         results_table.Accuracy(i) = Acc;
         results_table.FOM(i) = FOM;
-        
+        results_table.NumClusters(i) = chosen_c;
+
     catch ME
         warning('Error processing %s: %s', patient_filename, ME.message);
-        results_table{i, 2:7} = NaN; 
+        results_table{i, 2:7} = NaN;
+        results_table.NumClusters(i) = NaN;
     end
     
     results_table.ProcessingTime(i) = toc;

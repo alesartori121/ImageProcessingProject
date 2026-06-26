@@ -30,9 +30,9 @@ disp(['Found ', num2str(num_patients), ' patients to process.']);
 
 % --- 2. PREALLOCATE DATA STORAGE ---
 % Create an empty table to store the results
-results_table = table('Size', [num_patients, 7], ...
-    'VariableTypes', {'string', 'double', 'double', 'double', 'double', 'double', 'double'}, ...
-    'VariableNames', {'PatientID', 'Pcd_Sens', 'Pnd', 'Pfa', 'Accuracy', 'FOM', 'ProcessingTime'});
+results_table = table('Size', [num_patients, 8], ...
+    'VariableTypes', {'string', 'double', 'double', 'double', 'double', 'double', 'double', 'double'}, ...
+    'VariableNames', {'PatientID', 'Pcd_Sens', 'Pnd', 'Pfa', 'Accuracy', 'FOM', 'ProcessingTime', 'NumClusters'});
 
 % Initialize a Waitbar to track progress
 h_wait = waitbar(0, 'Processing dataset, please wait...');
@@ -65,33 +65,40 @@ for i = 1:num_patients
         binary_gt = slice_gt > 0;
         
         % -- Pipeline --
+        % NOTE ON FIDELITY: brain-masking (Otsu+morphology) below is an
+        % addition vs. Zotin et al. (needed for BRATS' large background);
+        % see src/main.m for the full rationale of every deviation.
         filtered_slice = medfilt2(slice_norm, [3 3]);
         level = graythresh(filtered_slice);
         initial_mask = imbinarize(filtered_slice, level);
         clean_mask = bwareafilt(imfill(initial_mask, 'holes'), 1);
-        
+
         enhanced_slice = apply_bcet(filtered_slice, clean_mask);
-        
-        [~, candidate_tumor_mask] = apply_fcm_clustering(enhanced_slice, clean_mask, 4);
-        
+
+        % c is chosen automatically from this range (Zotin et al. does not
+        % specify c); see apply_fcm_clustering.m for the selection criteria.
+        [~, candidate_tumor_mask, chosen_c] = apply_fcm_clustering(enhanced_slice, clean_mask, 3:5);
+
         final_tumor_mask = isolate_tumor_mass(candidate_tumor_mask);
-        
+
         [tumor_edges, ~] = extract_tumor_edges(final_tumor_mask, slice_norm);
-        
+
         % -- Evaluation --
         [Pcd, Pnd, Pfa, FOM, Sens, Acc] = calculate_zotin_metrics(tumor_edges, binary_gt);
-        
+
         % -- Store Data --
         results_table.Pcd_Sens(i) = Sens; % Pcd is mathematically equal to Sensitivity
         results_table.Pnd(i) = Pnd;
         results_table.Pfa(i) = Pfa;
         results_table.Accuracy(i) = Acc;
         results_table.FOM(i) = FOM;
-        
+        results_table.NumClusters(i) = chosen_c;
+
     catch ME
         % If something fails (e.g., no tumor in the slice), log it and put NaNs
         warning('Error processing %s: %s', patient_filename, ME.message);
-        results_table{i, 2:6} = NaN; 
+        results_table{i, 2:6} = NaN;
+        results_table.NumClusters(i) = NaN;
     end
     
     results_table.ProcessingTime(i) = toc; % End timer
