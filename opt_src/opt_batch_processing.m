@@ -1,7 +1,7 @@
 % -------------------------------------------------------------------------
 % PROJECT: Brain Tumor Edge Detection (Optimized Pipeline)
 % SCRIPT: opt_batch_processing_.m
-% DESCRIPTION: Executes the Optimized Pipeline (FLAIR + Dynamic Slice) 
+% DESCRIPTION: Executes the Optimized Pipeline (FLAIR + Dynamic Slice)
 %              on ALL BRATS patients and evaluates with Dilated Metrics.
 % -------------------------------------------------------------------------
 
@@ -14,7 +14,7 @@ disp('======================================================');
 
 % --- 1. SETUP PATHS ---
 script_dir = fileparts(mfilename('fullpath'));
-data_dir = fullfile(script_dir, '..', 'data'); 
+data_dir = fullfile(script_dir, '..', 'data');
 images_dir = fullfile(data_dir, 'imagesTr');
 labels_dir = fullfile(data_dir, 'labelsTr');
 
@@ -32,22 +32,17 @@ disp(['Found ', num2str(num_patients), ' patients. Beginning processing...']);
 results_table = table('Size', [num_patients, 9], ...
     'VariableTypes', {'string', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'}, ...
     'VariableNames', {'PatientID', 'DynamicSliceZ', 'Pcd_Sens', 'Pnd', 'Pfa', 'Accuracy', 'FOM', 'ProcessingTime', 'NumClusters'});
-<<<<<<< HEAD
-=======
-
-h_wait = waitbar(0, 'Processing Optimized Dataset...');
->>>>>>> refs/remotes/origin/main
 
 % --- 3. MAIN PROCESSING LOOP ---
 for i = 1:num_patients
     tic;
-    
+
     patient_filename = image_files(i).name;
     results_table.PatientID(i) = patient_filename;
-    
+
     img_path = fullfile(images_dir, patient_filename);
     lbl_path = fullfile(labels_dir, patient_filename);
-    
+
     try
         % -- Load Data --
         volume4D = niftiread(niftiinfo(img_path));
@@ -68,55 +63,45 @@ for i = 1:num_patients
 
         slice_flair = volume_flair(:, :, best_slice_idx);
         slice_gt = volume_gt(:, :, best_slice_idx);
-        
+
         slice_norm = (slice_flair - min(slice_flair(:))) / (max(slice_flair(:)) - min(slice_flair(:)));
         binary_gt = slice_gt > 0;
-        
+
         % -- Pre-processing Pipeline --
         filtered_slice = medfilt2(slice_norm, [3 3]);
         level = graythresh(filtered_slice);
         initial_mask = imbinarize(filtered_slice, level);
         clean_mask = bwareafilt(imfill(initial_mask, 'holes'), 1);
-        
+
         enhanced_slice = apply_bcet(filtered_slice, clean_mask);
-        
+
         % -- FCM Clustering --
-<<<<<<< HEAD
         % c is fixed at 4 (Zotin et al. does not specify c; see
         % apply_fcm_clustering.m for the selection criteria).
         num_clusters = 4;
         [~, candidate_tumor_mask] = apply_fcm_clustering(enhanced_slice, clean_mask, num_clusters);
-=======
-        % c is chosen automatically from this range (Zotin et al. does not
-        % specify c); see apply_fcm_clustering.m for the selection criteria.
-        [~, candidate_tumor_mask, chosen_c] = apply_fcm_clustering(enhanced_slice, clean_mask, 3:5);
->>>>>>> refs/remotes/origin/main
         final_tumor_mask = isolate_tumor_mass(candidate_tumor_mask);
-        
+
         % -- Edge Detection --
         [tumor_edges, ~] = extract_tumor_edges(final_tumor_mask, slice_norm);
-        
+
         % -- INNOVATION 3: Dilated Metric Evaluation --
         [Pcd, Pnd, Pfa, FOM, Sens, Acc] = calculate_zotin_metrics_optimized(tumor_edges, binary_gt);
-        
+
         % -- Store Data --
-        results_table.Pcd_Sens(i) = Sens; 
+        results_table.Pcd_Sens(i) = Sens;
         results_table.Pnd(i) = Pnd;
         results_table.Pfa(i) = Pfa;
         results_table.Accuracy(i) = Acc;
         results_table.FOM(i) = FOM;
-<<<<<<< HEAD
         results_table.NumClusters(i) = num_clusters;
-=======
-        results_table.NumClusters(i) = chosen_c;
->>>>>>> refs/remotes/origin/main
 
     catch ME
         warning('Error processing %s: %s', patient_filename, ME.message);
         results_table{i, 2:7} = NaN;
         results_table.NumClusters(i) = NaN;
     end
-    
+
     results_table.ProcessingTime(i) = toc;
 
     % Console progress (no GUI waitbar: keeps this script runnable headless)

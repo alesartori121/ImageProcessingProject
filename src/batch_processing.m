@@ -13,7 +13,7 @@ disp('======================================================');
 
 % --- 1. SETUP PATHS ---
 script_dir = fileparts(mfilename('fullpath'));
-data_dir = fullfile(script_dir, '..', 'data'); 
+data_dir = fullfile(script_dir, '..', 'data');
 images_dir = fullfile(data_dir, 'imagesTr');
 labels_dir = fullfile(data_dir, 'labelsTr');
 
@@ -33,23 +33,17 @@ disp(['Found ', num2str(num_patients), ' patients to process.']);
 results_table = table('Size', [num_patients, 8], ...
     'VariableTypes', {'string', 'double', 'double', 'double', 'double', 'double', 'double', 'double'}, ...
     'VariableNames', {'PatientID', 'Pcd_Sens', 'Pnd', 'Pfa', 'Accuracy', 'FOM', 'ProcessingTime', 'NumClusters'});
-<<<<<<< HEAD
-=======
-
-% Initialize a Waitbar to track progress
-h_wait = waitbar(0, 'Processing dataset, please wait...');
->>>>>>> refs/remotes/origin/main
 
 % --- 3. MAIN PROCESSING LOOP ---
 for i = 1:num_patients
     tic; % Start timer for this patient
-    
+
     patient_filename = image_files(i).name;
     results_table.PatientID(i) = patient_filename;
-    
+
     img_path = fullfile(images_dir, patient_filename);
     lbl_path = fullfile(labels_dir, patient_filename);
-    
+
     % Use try-catch to prevent a single bad file from stopping the whole loop
     try
         % -- Load Data --
@@ -57,16 +51,16 @@ for i = 1:num_patients
         vol_img = niftiread(info_img);
         info_lbl = niftiinfo(lbl_path);
         vol_lbl = double(niftiread(info_lbl));
-        
+
         vol_t2 = double(vol_img(:, :, :, 4)); % T2 Modality
         mid_slice = round(size(vol_t2, 3) / 2);
-        
+
         slice_t2 = vol_t2(:, :, mid_slice);
         slice_gt = vol_lbl(:, :, mid_slice);
-        
+
         slice_norm = (slice_t2 - min(slice_t2(:))) / (max(slice_t2(:)) - min(slice_t2(:)));
         binary_gt = slice_gt > 0;
-        
+
         % -- Pipeline --
         % NOTE ON FIDELITY: brain-masking (Otsu+morphology) below is an
         % addition vs. Zotin et al. (needed for BRATS' large background);
@@ -78,16 +72,10 @@ for i = 1:num_patients
 
         enhanced_slice = apply_bcet(filtered_slice, clean_mask);
 
-<<<<<<< HEAD
         % c is fixed at 4 (Zotin et al. does not specify c; see
         % apply_fcm_clustering.m for the selection criteria).
         num_clusters = 4;
         [~, candidate_tumor_mask] = apply_fcm_clustering(enhanced_slice, clean_mask, num_clusters);
-=======
-        % c is chosen automatically from this range (Zotin et al. does not
-        % specify c); see apply_fcm_clustering.m for the selection criteria.
-        [~, candidate_tumor_mask, chosen_c] = apply_fcm_clustering(enhanced_slice, clean_mask, 3:5);
->>>>>>> refs/remotes/origin/main
 
         final_tumor_mask = isolate_tumor_mass(candidate_tumor_mask);
 
@@ -102,11 +90,7 @@ for i = 1:num_patients
         results_table.Pfa(i) = Pfa;
         results_table.Accuracy(i) = Acc;
         results_table.FOM(i) = FOM;
-<<<<<<< HEAD
         results_table.NumClusters(i) = num_clusters;
-=======
-        results_table.NumClusters(i) = chosen_c;
->>>>>>> refs/remotes/origin/main
 
     catch ME
         % If something fails (e.g., no tumor in the slice), log it and put NaNs
@@ -114,7 +98,7 @@ for i = 1:num_patients
         results_table{i, 2:6} = NaN;
         results_table.NumClusters(i) = NaN;
     end
-    
+
     results_table.ProcessingTime(i) = toc; % End timer
 
     % Console progress (no GUI waitbar: keeps this script runnable headless)

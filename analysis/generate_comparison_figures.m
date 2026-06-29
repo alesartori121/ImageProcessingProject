@@ -85,21 +85,13 @@ function process_baseline_patient(data_dir, patient_id, plots_dir)
     clean_mask = bwareafilt(imfill(initial_mask, 'holes'), 1);
     enhanced_slice = apply_bcet(filtered_slice, clean_mask);
 
-<<<<<<< HEAD
     num_clusters = 4;
     [segmented_slice, candidate_tumor_mask] = apply_fcm_clustering(enhanced_slice, clean_mask, num_clusters);
-=======
-    [segmented_slice, candidate_tumor_mask, chosen_c] = apply_fcm_clustering(enhanced_slice, clean_mask, 3:5);
->>>>>>> refs/remotes/origin/main
     final_tumor_mask = isolate_tumor_mass(candidate_tumor_mask);
     [tumor_edges, clinical_overlay] = extract_tumor_edges(final_tumor_mask, slice_norm);
 
     display_preliminary_visualization(slice_norm, slice_gt, filtered_slice, ...
-<<<<<<< HEAD
         clean_mask, enhanced_slice, num_clusters, segmented_slice, ...
-=======
-        clean_mask, enhanced_slice, chosen_c, segmented_slice, ...
->>>>>>> refs/remotes/origin/main
         candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, plots_dir);
 end
 
@@ -128,20 +120,12 @@ function process_optimized_patient(data_dir, patient_id, plots_dir)
     clean_mask = bwareafilt(imfill(initial_mask, 'holes'), 1);
     enhanced_slice = apply_bcet(filtered_slice, clean_mask);
 
-<<<<<<< HEAD
     num_clusters = 4;
     [segmented_slice, candidate_tumor_mask] = apply_fcm_clustering(enhanced_slice, clean_mask, num_clusters);
-=======
-    [segmented_slice, candidate_tumor_mask, chosen_c] = apply_fcm_clustering(enhanced_slice, clean_mask, 3:5);
->>>>>>> refs/remotes/origin/main
     final_tumor_mask = isolate_tumor_mass(candidate_tumor_mask);
     [tumor_edges, clinical_overlay] = extract_tumor_edges(final_tumor_mask, slice_norm);
 
     display_preliminary_visualization(slice_norm, slice_gt, filtered_slice, ...
-<<<<<<< HEAD
         clean_mask, enhanced_slice, num_clusters, segmented_slice, ...
-=======
-        clean_mask, enhanced_slice, chosen_c, segmented_slice, ...
->>>>>>> refs/remotes/origin/main
         candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, plots_dir);
 end

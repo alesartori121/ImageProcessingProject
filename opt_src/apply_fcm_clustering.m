@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 function [segmented_slice, candidate_tumor_mask] = apply_fcm_clustering(enhanced_slice, clean_mask, num_clusters)
 % APPLY_FCM_CLUSTERING Segments brain tissue with FCM and isolates the
 % cluster most likely to be the tumor.
@@ -20,46 +19,6 @@ function [segmented_slice, candidate_tumor_mask] = apply_fcm_clustering(enhanced
     fcm_input = enhanced_slice(clean_mask);
 
     [centers, U] = fcm(fcm_input, num_clusters, fcm_options);
-=======
-function [segmented_slice, candidate_tumor_mask, chosen_c] = apply_fcm_clustering(enhanced_slice, clean_mask, num_clusters_range)
-% APPLY_FCM_CLUSTERING Segments brain tissue with FCM and isolates the
-% cluster most likely to be the tumor.
-%   NOTE ON FIDELITY: Zotin et al. (Eq. 7-9) do not specify the number of
-%   clusters c, nor how to pick the tumor cluster once FCM has run. This
-%   function (a) picks c automatically from num_clusters_range by minimizing
-%   the Xie-Beni cluster validity index (Xie & Beni, 1991), and (b) scores
-%   the two brightest clusters by the solidity of their largest connected
-%   component (a compact, massive blob beats thin/scattered CSF), instead of
-%   always taking the single brightest cluster, which is often CSF/
-%   ventricles rather than the tumor.
-%   The simpler FCM partition coefficient (mean(U.^2)) was tried first, but
-%   it is known to decrease monotonically with c (Bezdek, 1981): it always
-%   selected the smallest c in the range regardless of the image, which is
-%   not a real data-driven choice. Xie-Beni balances cluster compactness
-%   against the separation between cluster centers and does not have that
-%   bias, so it is used here instead.
-    if nargin < 3 || isempty(num_clusters_range)
-        num_clusters_range = 3:5;
-    end
-    fcm_options = [2.0; 100; 1e-5; 0];
-    fcm_input = enhanced_slice(clean_mask);
-    m = fcm_options(1);
-
-    best_xb = Inf;
-    centers = []; U = []; chosen_c = num_clusters_range(1);
-    for c = num_clusters_range
-        [c_centers, c_U] = fcm(fcm_input, c, fcm_options);
-        dist2 = (c_centers - fcm_input').^2; % c x N squared distances (1-D intensity data)
-        center_gaps = abs(c_centers - c_centers.');
-        center_gaps(logical(eye(c))) = Inf;
-        min_center_dist2 = min(center_gaps(:))^2;
-        xb = sum((c_U.^m) .* dist2, 'all') / (numel(fcm_input) * min_center_dist2);
-        if xb < best_xb
-            best_xb = xb;
-            centers = c_centers; U = c_U; chosen_c = c;
-        end
-    end
->>>>>>> refs/remotes/origin/main
 
     [~, max_U_idx] = max(U, [], 1);
     segmented_slice = zeros(size(enhanced_slice));
@@ -77,11 +36,7 @@ function [segmented_slice, candidate_tumor_mask, chosen_c] = apply_fcm_clusterin
     MAX_AREA_FRACTION = 0.40;
     brain_area = sum(clean_mask(:));
     [~, sort_idx] = sort(centers, 'descend');
-<<<<<<< HEAD
     num_candidates = min(3, num_clusters);
-=======
-    num_candidates = min(3, chosen_c);
->>>>>>> refs/remotes/origin/main
     best_score = -Inf;
     candidate_tumor_mask = false(size(enhanced_slice));
     for k = 1:num_candidates
