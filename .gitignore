@@ -22,5 +22,7 @@ slprj/
 
 # Dati
 data/
+docs/
+plots/
 
 .DS_Store
