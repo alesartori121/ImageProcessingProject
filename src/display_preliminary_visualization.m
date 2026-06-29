@@ -54,7 +54,7 @@ function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice,
 
     subplot(1, 3, 2);
     imshow(candidate_tumor_mask);
-    title('Brightest Cluster (Tumor + CSF)');
+    title('Candidate Tumor Cluster (Tumor + CSF)');
 
     subplot(1, 3, 3);
     imshow(final_tumor_mask);

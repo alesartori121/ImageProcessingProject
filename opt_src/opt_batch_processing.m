@@ -32,8 +32,11 @@ disp(['Found ', num2str(num_patients), ' patients. Beginning processing...']);
 results_table = table('Size', [num_patients, 9], ...
     'VariableTypes', {'string', 'double', 'double', 'double', 'double', 'double', 'double', 'double', 'double'}, ...
     'VariableNames', {'PatientID', 'DynamicSliceZ', 'Pcd_Sens', 'Pnd', 'Pfa', 'Accuracy', 'FOM', 'ProcessingTime', 'NumClusters'});
+<<<<<<< HEAD
+=======
 
 h_wait = waitbar(0, 'Processing Optimized Dataset...');
+>>>>>>> refs/remotes/origin/main
 
 % --- 3. MAIN PROCESSING LOOP ---
 for i = 1:num_patients
@@ -78,9 +81,16 @@ for i = 1:num_patients
         enhanced_slice = apply_bcet(filtered_slice, clean_mask);
         
         % -- FCM Clustering --
+<<<<<<< HEAD
+        % c is fixed at 4 (Zotin et al. does not specify c; see
+        % apply_fcm_clustering.m for the selection criteria).
+        num_clusters = 4;
+        [~, candidate_tumor_mask] = apply_fcm_clustering(enhanced_slice, clean_mask, num_clusters);
+=======
         % c is chosen automatically from this range (Zotin et al. does not
         % specify c); see apply_fcm_clustering.m for the selection criteria.
         [~, candidate_tumor_mask, chosen_c] = apply_fcm_clustering(enhanced_slice, clean_mask, 3:5);
+>>>>>>> refs/remotes/origin/main
         final_tumor_mask = isolate_tumor_mass(candidate_tumor_mask);
         
         % -- Edge Detection --
@@ -95,7 +105,11 @@ for i = 1:num_patients
         results_table.Pfa(i) = Pfa;
         results_table.Accuracy(i) = Acc;
         results_table.FOM(i) = FOM;
+<<<<<<< HEAD
+        results_table.NumClusters(i) = num_clusters;
+=======
         results_table.NumClusters(i) = chosen_c;
+>>>>>>> refs/remotes/origin/main
 
     catch ME
         warning('Error processing %s: %s', patient_filename, ME.message);
@@ -104,10 +118,12 @@ for i = 1:num_patients
     end
     
     results_table.ProcessingTime(i) = toc;
-    waitbar(i / num_patients, h_wait, sprintf('Optimizing Patient %d of %d', i, num_patients));
-end
 
-close(h_wait);
+    % Console progress (no GUI waitbar: keeps this script runnable headless)
+    if mod(i, 10) == 0 || i == num_patients
+        fprintf('Optimizing Patient %d of %d\n', i, num_patients);
+    end
+end
 
 % --- 4. SAVE AND SUMMARIZE RESULTS ---
 disp('======================================================');

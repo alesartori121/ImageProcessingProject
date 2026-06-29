@@ -1,3 +1,26 @@
+<<<<<<< HEAD
+function [segmented_slice, candidate_tumor_mask] = apply_fcm_clustering(enhanced_slice, clean_mask, num_clusters)
+% APPLY_FCM_CLUSTERING Segments brain tissue with FCM and isolates the
+% cluster most likely to be the tumor.
+%   NOTE ON FIDELITY: Zotin et al. (Eq. 7-9) do not specify the number of
+%   clusters c, nor how to pick the tumor cluster once FCM has run. Gonzalez
+%   & Woods (Ch. 10.5, clustering-based segmentation) treats the number of
+%   clusters as a value that must be specified directly -- "the important
+%   issue is the value selected for k ... multiple passes are rarely used"
+%   -- rather than estimated automatically, so a fixed c=4 is used here.
+%   The tumor cluster is then chosen among up to the three brightest
+%   clusters by the solidity of their largest connected component (a
+%   compact, massive blob beats thin/scattered CSF), instead of always
+%   taking the single brightest cluster, which is often CSF/ventricles
+%   rather than the tumor.
+    if nargin < 3 || isempty(num_clusters)
+        num_clusters = 4;
+    end
+    fcm_options = [2.0; 100; 1e-5; 0];
+    fcm_input = enhanced_slice(clean_mask);
+
+    [centers, U] = fcm(fcm_input, num_clusters, fcm_options);
+=======
 function [segmented_slice, candidate_tumor_mask, chosen_c] = apply_fcm_clustering(enhanced_slice, clean_mask, num_clusters_range)
 % APPLY_FCM_CLUSTERING Segments brain tissue with FCM and isolates the
 % cluster most likely to be the tumor.
@@ -36,6 +59,7 @@ function [segmented_slice, candidate_tumor_mask, chosen_c] = apply_fcm_clusterin
             centers = c_centers; U = c_U; chosen_c = c;
         end
     end
+>>>>>>> refs/remotes/origin/main
 
     [~, max_U_idx] = max(U, [], 1);
     segmented_slice = zeros(size(enhanced_slice));
@@ -53,7 +77,11 @@ function [segmented_slice, candidate_tumor_mask, chosen_c] = apply_fcm_clusterin
     MAX_AREA_FRACTION = 0.40;
     brain_area = sum(clean_mask(:));
     [~, sort_idx] = sort(centers, 'descend');
+<<<<<<< HEAD
+    num_candidates = min(3, num_clusters);
+=======
     num_candidates = min(3, chosen_c);
+>>>>>>> refs/remotes/origin/main
     best_score = -Inf;
     candidate_tumor_mask = false(size(enhanced_slice));
     for k = 1:num_candidates

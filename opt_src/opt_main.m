@@ -13,7 +13,11 @@ disp('======================================================');
 % --- 1. DYNAMIC PATH CONFIGURATION ---
 script_dir = fileparts(mfilename('fullpath'));
 data_dir = fullfile(script_dir, '..', 'data');
+<<<<<<< HEAD
+patient_id = ['BRATS_001.nii.gz'];
+=======
 patient_id = 'BRATS_001.nii.gz';
+>>>>>>> refs/remotes/origin/main
 
 image_path = fullfile(data_dir, 'imagesTr', patient_id);
 label_path = fullfile(data_dir, 'labelsTr', patient_id);
@@ -72,8 +76,13 @@ clean_mask = bwareafilt(imfill(initial_mask, 'holes'), 1);
 enhanced_slice = apply_bcet(filtered_slice, clean_mask);
 
 % --- 4. FCM CLUSTERING & TOPOLOGICAL FILTERING ---
+<<<<<<< HEAD
+% c is fixed at 4 (Zotin et al. does not specify c; see apply_fcm_clustering.m
+% for the cluster- and tumor-candidate-selection criteria).
+=======
 % c is chosen automatically from this range (Zotin et al. does not specify
 % c); see apply_fcm_clustering.m for the selection criteria.
+>>>>>>> refs/remotes/origin/main
 disp('--- EXECUTING FCM CLUSTERING ---');
 cluster_range = 3:5;
 [segmented_slice, candidate_tumor_mask, chosen_c] = apply_fcm_clustering(enhanced_slice, clean_mask, cluster_range);
@@ -103,6 +112,10 @@ disp('--------------------------------------------------');
 % --- 7. VISUALIZATION RENDERING ---
 disp('Rendering visualizations...');
 display_preliminary_visualization(slice_norm, slice_gt, filtered_slice, ...
+<<<<<<< HEAD
+    clean_mask, enhanced_slice, num_clusters, segmented_slice, ...
+=======
     clean_mask, enhanced_slice, chosen_c, segmented_slice, ...
+>>>>>>> refs/remotes/origin/main
     candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, plots_dir);
 disp(['Figures saved to: ', plots_dir]);

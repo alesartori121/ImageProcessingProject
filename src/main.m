@@ -9,7 +9,11 @@ clear; clc; close all;
 disp('--- CONFIGURING PATHS ---');
 script_dir = fileparts(mfilename('fullpath'));
 data_dir = fullfile(script_dir, '..', 'data');
+<<<<<<< HEAD
+patient_id = ['BRATS_013.nii.gz'];
+=======
 patient_id = 'BRATS_001.nii.gz';
+>>>>>>> refs/remotes/origin/main
 image_path = fullfile(data_dir, 'imagesTr', patient_id);
 label_path = fullfile(data_dir, 'labelsTr', patient_id);
 patient_name = erase(patient_id, '.nii.gz');
@@ -55,11 +59,20 @@ enhanced_slice = apply_bcet(filtered_slice, clean_mask);
 
 % --- 4. FUZZY C-MEANS (FCM) CLUSTERING & ISOLATION ---
 % NOTE ON FIDELITY: the paper (Eq. 7-9) does not specify the number of
+<<<<<<< HEAD
+% clusters c, nor how to pick the tumor cluster after FCM. Per Gonzalez &
+% Woods Ch.10.5, the number of clusters for segmentation is specified
+% directly rather than estimated automatically, so a fixed c=4 is used.
+% apply_fcm_clustering scores the brightest clusters by connected-component
+% solidity instead of always taking the single brightest one, since on T2
+% the brightest cluster is often CSF/ventricles rather than the tumor.
+=======
 % clusters c, nor how to pick the tumor cluster after FCM. apply_fcm_clustering
 % now (a) chooses c automatically from cluster_range by partition coefficient,
 % and (b) scores the brightest clusters by connected-component solidity
 % instead of always taking the single brightest one, since on T2 the
 % brightest cluster is often CSF/ventricles rather than the tumor.
+>>>>>>> refs/remotes/origin/main
 disp('--- EXECUTING FCM CLUSTERING ---');
 cluster_range = 3:5;
 [segmented_slice, candidate_tumor_mask, chosen_c] = apply_fcm_clustering(enhanced_slice, clean_mask, cluster_range);
@@ -94,6 +107,10 @@ disp('--------------------------------------------------');
 % --- 7. VISUALIZATION RENDERING ---
 disp('Computation complete. Rendering visualizations...');
 display_preliminary_visualization(slice_norm, slice_gt, filtered_slice, ...
+<<<<<<< HEAD
+    clean_mask, enhanced_slice, num_clusters, segmented_slice, ...
+=======
     clean_mask, enhanced_slice, chosen_c, segmented_slice, ...
+>>>>>>> refs/remotes/origin/main
     candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, plots_dir);
 disp(['Figures saved to: ', plots_dir]);
