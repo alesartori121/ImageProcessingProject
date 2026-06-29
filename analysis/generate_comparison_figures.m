@@ -92,7 +92,7 @@ function process_baseline_patient(data_dir, patient_id, plots_dir)
 
     display_preliminary_visualization(slice_norm, slice_gt, filtered_slice, ...
         clean_mask, enhanced_slice, num_clusters, segmented_slice, ...
-        candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, plots_dir);
+        candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, plots_dir, 'T2');
 end
 
 function process_optimized_patient(data_dir, patient_id, plots_dir)
@@ -127,5 +127,5 @@ function process_optimized_patient(data_dir, patient_id, plots_dir)
 
     display_preliminary_visualization(slice_norm, slice_gt, filtered_slice, ...
         clean_mask, enhanced_slice, num_clusters, segmented_slice, ...
-        candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, plots_dir);
+        candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, plots_dir, 'FLAIR');
 end

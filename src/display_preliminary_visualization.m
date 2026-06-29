@@ -1,4 +1,4 @@
-function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice, clean_mask, enhanced_slice, num_clusters, segmented_slice, candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, output_dir)
+function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice, clean_mask, enhanced_slice, num_clusters, segmented_slice, candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, output_dir, modality_label)
 % DISPLAY_PRELIMINARY_VISUALIZATION Renders all pipeline visualizations.
 %   This function acts as the graphical front-end of the application,
 %   generating all the intermediate and final figures required for the
@@ -6,8 +6,14 @@ function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice,
 %   If output_dir is provided, every figure is also saved there as a PNG
 %   (the directory is created if needed), so figures for the report do not
 %   have to be exported by hand from the MATLAB GUI.
+%   modality_label names the input MRI sequence (e.g. 'T2' or 'FLAIR') for
+%   the title of the first panel; it defaults to 'T2' for backward
+%   compatibility, since the baseline pipeline uses T2.
     if nargin < 13
         output_dir = '';
+    end
+    if nargin < 14 || isempty(modality_label)
+        modality_label = 'T2';
     end
     save_figures = ~isempty(output_dir);
     if save_figures && ~exist(output_dir, 'dir')
@@ -15,10 +21,10 @@ function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice,
     end
 
     % --- 1. Data Understanding ---
-    fig1 = figure('Name', 'Data Understanding: T2 and Ground Truth', 'Position', [50, 50, 1000, 400]);
+    fig1 = figure('Name', ['Data Understanding: ', modality_label, ' and Ground Truth'], 'Position', [50, 50, 1200, 450]);
     subplot(1, 2, 1);
     imshow(slice_norm, []);
-    title('Normalized T2 Slice');
+    title(['Normalized ', modality_label, ' Slice']);
 
     subplot(1, 2, 2);
     imshow(slice_gt, []);
@@ -28,10 +34,10 @@ function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice,
     end
 
     % --- 2. Enhancement Pipeline (Step 3) ---
-    fig2 = figure('Name', 'Step 3: Pre-processing & Enhancement', 'Position', [100, 100, 1200, 400]);
+    fig2 = figure('Name', 'Step 3: Pre-processing & Enhancement', 'Position', [100, 100, 1200, 450]);
     subplot(1, 3, 1);
     imshow(filtered_slice, []);
-    title('Median Filtered T2');
+    title(['Median Filtered ', modality_label]);
 
     subplot(1, 3, 2);
     imshow(clean_mask);
@@ -45,7 +51,7 @@ function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice,
     end
 
     % --- 3. Segmentation Pipeline (Step 4) ---
-    fig3 = figure('Name', 'Step 4: FCM Segmentation & Isolation', 'Position', [150, 150, 1200, 400]);
+    fig3 = figure('Name', 'Step 4: FCM Segmentation & Isolation', 'Position', [150, 150, 1200, 450]);
     subplot(1, 3, 1);
     imshow(segmented_slice, []);
     colormap(jet(num_clusters + 1));
@@ -81,7 +87,7 @@ function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice,
     end
 
     % --- 5. Final Clinical Validation (COMBINED OVERLAY) ---
-    fig5 = figure('Name', 'Final Validation: Edge Detection vs Ground Truth', 'Position', [250, 250, 1400, 450]);
+    fig5 = figure('Name', 'Final Validation: Edge Detection vs Ground Truth', 'Position', [250, 250, 1200, 450]);
 
     % Subplot A: Our Algorithmic Prediction (Red)
     subplot(1, 3, 1);
