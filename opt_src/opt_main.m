@@ -13,7 +13,7 @@ disp('======================================================');
 % --- 1. DYNAMIC PATH CONFIGURATION ---
 script_dir = fileparts(mfilename('fullpath'));
 data_dir = fullfile(script_dir, '..', 'data');
-patient_id = 'BRATS_001.nii.gz';
+patient_id = 'BRATS_213.nii.gz';
 
 image_path = fullfile(data_dir, 'imagesTr', patient_id);
 label_path = fullfile(data_dir, 'labelsTr', patient_id);
@@ -75,3 +75,16 @@ disp('--------------------------------------------------');
 disp('Rendering visualizations...');
 display_preliminary_visualization(slice_norm, slice_gt, filtered_slice, clean_mask, enhanced_slice, num_clusters, segmented_slice, candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, plots_dir, 'FLAIR');
 disp(['Figures saved to: ', plots_dir]);
+
+% --- 8. 3-D BRAIN + TUMOR RECONSTRUCTION ---
+disp('--- RECONSTRUCTING 3-D VOLUME (ALL SLICES) ---');
+[brain_mask_3D, tumor_mask_3D, voxel_spacing, recon_diag] = ...
+    reconstruct_brain_tumor_volumes(image_path, num_clusters);
+disp(['Slices with segmented brain tissue: ', num2str(recon_diag.processed_slices), ...
+      ' / ', num2str(recon_diag.num_slices)]);
+disp(['Reconstructed tumor voxels (after 3-D filtering): ', num2str(recon_diag.clean_tumor_voxels)]);
+
+fig_3d = render_brain_tumor_3d(brain_mask_3D, tumor_mask_3D, voxel_spacing, patient_name, 'on');
+exportgraphics(fig_3d, fullfile(plots_dir, '06_3d_reconstruction.png'));
+savefig(fig_3d, fullfile(plots_dir, '06_3d_reconstruction.fig'));
+disp(['3-D reconstruction figure saved to: ', plots_dir]);
