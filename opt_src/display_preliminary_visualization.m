@@ -1,14 +1,4 @@
 function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice, clean_mask, enhanced_slice, num_clusters, segmented_slice, candidate_tumor_mask, final_tumor_mask, tumor_edges, clinical_overlay, binary_gt, output_dir, modality_label)
-% DISPLAY_PRELIMINARY_VISUALIZATION Renders all pipeline visualizations.
-%   This function acts as the graphical front-end of the application,
-%   generating all the intermediate and final figures required for the
-%   scientific report, keeping the main script clean from UI logic.
-%   If output_dir is provided, every figure is also saved there as a PNG
-%   (the directory is created if needed), so figures for the report do not
-%   have to be exported by hand from the MATLAB GUI.
-%   modality_label names the input MRI sequence (e.g. 'T2' or 'FLAIR') for
-%   the title of the first panel; it defaults to 'T2' for backward
-%   compatibility, since the baseline pipeline uses T2.
     if nargin < 13
         output_dir = '';
     end
@@ -94,10 +84,6 @@ function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice,
     imshow(clinical_overlay);
     title('Our Prediction (Red)');
 
-    % Subplot B: Ground Truth (Green)
-    % NOTE ON FIDELITY: binary_gt is already binary, so its boundary is
-    % traced with the same morphological edge detector used in
-    % extract_tumor_edges.m (course slides, leaf2.m), not edge(...,'canny').
     se = strel('square', 3);
     gt_edges = imdilate(binary_gt, se) & ~binary_gt;
     gt_overlay = repmat(slice_norm, [1, 1, 3]);
@@ -109,27 +95,20 @@ function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice,
     imshow(gt_overlay);
     title('Radiologist Ground Truth (Green)');
 
-    % Subplot C: Combined Mathematical Overlay (Yellow/Red/Green)
     combined_overlay = repmat(slice_norm, [1, 1, 3]);
     r_comb = combined_overlay(:,:,1);
     g_comb = combined_overlay(:,:,2);
     b_comb = combined_overlay(:,:,3);
 
-    % Logic arrays for intersections and differences
     overlap_edges = tumor_edges & gt_edges;
     only_pred = tumor_edges & ~gt_edges;
     only_gt = gt_edges & ~tumor_edges;
 
-    % Apply Red where ONLY the algorithm found an edge
     r_comb(only_pred) = 1; g_comb(only_pred) = 0; b_comb(only_pred) = 0;
 
-    % Apply Green where ONLY the radiologist found an edge
     r_comb(only_gt) = 0; g_comb(only_gt) = 1; b_comb(only_gt) = 0;
 
-    % Apply Yellow (Red+Green) where BOTH agree perfectly
     r_comb(overlap_edges) = 1; g_comb(overlap_edges) = 1; b_comb(overlap_edges) = 0;
-
-    % Reconstruct the final image
     combined_overlay(:,:,1) = r_comb;
     combined_overlay(:,:,2) = g_comb;
     combined_overlay(:,:,3) = b_comb;
@@ -140,7 +119,5 @@ function display_preliminary_visualization(slice_norm, slice_gt, filtered_slice,
     if save_figures
         exportgraphics(fig5, fullfile(output_dir, '05_final_validation.png'));
     end
-
-    % Force MATLAB to draw all figures immediately
     drawnow;
 end

@@ -1,9 +1,3 @@
-% -------------------------------------------------------------------------
-% PROJECT: Brain Tumor Edge Detection (Optimized Pipeline)
-% SCRIPT: main_optimized.m
-% DESCRIPTION: Introduces FLAIR modality and Dynamic Slice Selection
-%              to overcome the topological limitations of the baseline.
-% -------------------------------------------------------------------------
 clear; clc; close all;
 
 disp('======================================================');

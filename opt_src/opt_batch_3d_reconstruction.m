@@ -1,13 +1,3 @@
-% -------------------------------------------------------------------------
-% PROJECT: Brain Tumor Edge Detection (Optimized Pipeline)
-% SCRIPT: opt_batch_3d_reconstruction.m
-% DESCRIPTION: Runs the 3-D brain+tumor reconstruction
-%              (reconstruct_brain_tumor_volumes + render_brain_tumor_3d)
-%              over every patient in the dataset, in parallel via parfor.
-%              For each patient, saves a PNG preview and an interactive
-%              MATLAB .fig (rotatable when reopened) under
-%              plots/opt_src/<patient>/06_3d_reconstruction.{png,fig}.
-% -------------------------------------------------------------------------
 clear; clc; close all;
 
 disp('======================================================');
@@ -79,7 +69,6 @@ parfor i = 1:num_patients
     fprintf('[%d/%d] %s done in %.1fs (Dice=%.3f)\n', i, num_patients, patient_filename, row.ProcessingTime, row.DiceOverlap);
 end
 
-% --- SAVE SUMMARY ---
 disp('======================================================');
 disp('   BATCH 3-D RECONSTRUCTION COMPLETE');
 disp('======================================================');

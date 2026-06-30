@@ -2,20 +2,11 @@ function fig = render_brain_tumor_3d(brain_mask_3D, tumor_mask_3D, voxel_spacing
     if nargin < 5 || isempty(visible_state)
         visible_state = 'on';
     end
-
-    % NOTE ON FIDELITY: isosurface() returns an empty vertex list (0x0)
-    % when the smoothed scalar field never crosses the 0.5 level -- which
-    % can happen for a thin/small mask once Gaussian-smoothed, even
-    % though it has nonzero voxels. Indexing an empty array's columns
-    % then fails ("Index in position 2 exceeds array bounds"), so each
-    % surface is only added to the plot once its vertex list is
-    % confirmed non-empty.
     fig = figure('Name', ['3-D Tumor Reconstruction: ', patient_name], ...
-                 'Position', [100, 100, 900, 750], 'Visible', visible_state);
+    'Position', [100, 100, 900, 750], 'Visible', visible_state);
     hold on;
     legend_handles = gobjects(0);
     legend_labels = {};
-
     smoothed_brain = smooth3(double(brain_mask_3D), 'box', 5);
     fv_brain = isosurface(smoothed_brain, 0.5);
     if ~isempty(fv_brain.vertices)
@@ -24,7 +15,6 @@ function fig = render_brain_tumor_3d(brain_mask_3D, tumor_mask_3D, voxel_spacing
         legend_handles(end+1) = p_brain;
         legend_labels{end+1} = 'Brain surface';
     end
-
     if nnz(tumor_mask_3D) > 0
         smoothed_tumor = smooth3(double(tumor_mask_3D), 'gaussian', 11, 2.5);
         fv_tumor = isosurface(smoothed_tumor, 0.5);
@@ -35,7 +25,6 @@ function fig = render_brain_tumor_3d(brain_mask_3D, tumor_mask_3D, voxel_spacing
             legend_labels{end+1} = 'Reconstructed tumor mass';
         end
     end
-
     daspect([1 1 1]);
     view(3);
     axis tight; grid on; box on;

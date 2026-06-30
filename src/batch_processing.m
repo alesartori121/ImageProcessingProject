@@ -1,4 +1,3 @@
-
 clear; clc; close all;
 
 disp('======================================================');
@@ -60,7 +59,6 @@ for i = 1:num_patients
         results_table.FOM(i) = FOM;
         results_table.NumClusters(i) = num_clusters;
     catch ME
-        % If something fails (e.g., no tumor in the slice), log it and put NaNs
         warning('Error processing %s: %s', patient_filename, ME.message);
         results_table{i, 2:6} = NaN;
         results_table.NumClusters(i) = NaN;
